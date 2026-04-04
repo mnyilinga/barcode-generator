@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mnyilinga Digital — Barcode & QR Generator</title>
+
+  <!-- =====================================================
+       FONT: Inter peke yake kwa maandishi yote
+       ===================================================== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- =====================================================
+       MAKTABA: JsBarcode + qrcodejs (browser-ready)
+       Tumia cdnjs - ni ya kuaminika zaidi kwenye vivinjari
+       ===================================================== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* =====================================================
+       VIGEZO VYA MFUMO — CSS Custom Properties
+       ===================================================== */
+    :root {
+      --black:  #000000;
+      --orange: #ff6200;
+      --ora2:   #ff8533;
+      --white:  #ffffff;
+      --bg:     #080808;
+      --card:   #101010;
+      --bdr:    #1c1c1c;
+      --muted:  #555555;
+      --inp:    #0d0d0d;
+      --ff:     'Inter', sans-serif;
+      --r:      6px;
+      --rl:     12px;
+      --t:      all .24s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* =====================================================
+       RESET NA MSINGI
+       ===================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--ff); background: var(--black);
+      color: var(--white); font-size: 16px; line-height: 1.6; overflow-x: hidden;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; font-family: var(--ff); border: none; outline: none; }
+    input, select { font-family: var(--ff); }
+
+    /* =====================================================
+       LAYOUT
+       ===================================================== */
+    .container { width: 90%; max-width: 1180px; margin: 0 auto; }
+
+    /* =====================================================
+       VITUFE — Buttons
+       ===================================================== */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 26px; border-radius: var(--r);
+      font-size: .875rem; font-weight: 600;
+      letter-spacing: .02em; transition: var(--t);
+      white-space: nowrap; cursor: pointer;
+    }
+    .btn-primary { background: var(--orange); color: #fff; border: 1.5px solid var(--orange); }
+    .btn-primary:hover { background: var(--ora2); border-color: var(--ora2); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,98,0,.3); }
+    .btn-outline { background: transparent; color: #777; border: 1.5px solid #222; }
+    .btn-outline:hover { border-color: var(--orange); color: var(--white); }
+    .btn-sm { padding: 9px 18px; font-size: .8rem; }
+    .btn-lg { padding: 15px 34px; font-size: .95rem; }
+
+    /* =====================================================
+       NAVBAR
+       ===================================================== */
+    #navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: rgba(0,0,0,.82); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid #0f0f0f;
+      transition: var(--t);
+    }
+    #navbar.scrolled { background: rgba(0,0,0,.97); border-bottom-color: #181818; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 66px; }
+
+    .logo { display: flex; flex-direction: column; line-height: 1.15; }
+    .logo-top { font-size: 1.18rem; font-weight: 800; color: var(--white); letter-spacing: -.025em; }
+    .logo-top span { color: var(--orange); }
+    .logo-sub { font-size: .58rem; font-weight: 500; color: #3a3a3a; letter-spacing: .16em; text-transform: uppercase; }
+
+    .nav-links { display: flex; align-items: center; gap: 30px; list-style: none; }
+    .nav-links a { font-size: .83rem; font-weight: 500; color: #555; letter-spacing: .01em; transition: var(--t); position: relative; }
+    .nav-links a::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px; background: var(--orange); border-radius: 1px; transition: var(--t); }
+    .nav-links a:hover, .nav-links a.active { color: var(--white); }
+    .nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
+    .nav-r { display: flex; align-items: center; gap: 10px; }
+
+    /* Hamburger */
+    .ham { display: none; flex-direction: column; gap: 5px; background: none; padding: 4px; }
+    .ham span { display: block; width: 22px; height: 2px; background: var(--white); border-radius: 2px; transition: var(--t); }
+    .ham.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .ham.open span:nth-child(2) { opacity: 0; }
+    .ham.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Menyu ya simu */
+    .mobnav {
+      display: none; position: fixed; top: 66px; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,.99); backdrop-filter: blur(20px);
+      z-index: 999; padding: 24px; flex-direction: column; gap: 2px;
+      opacity: 0; pointer-events: none; transition: opacity .22s ease;
+    }
+    .mobnav.open { display: flex; opacity: 1; pointer-events: all; }
+    .mobnav a { display: block; padding: 14px 16px; font-size: 1rem; font-weight: 500; color: #666; border-radius: var(--r); transition: var(--t); }
+    .mobnav a:hover { color: var(--white); background: #0a0a0a; padding-left: 22px; }
+    .mob-btns { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* =====================================================
+       HERO
+       ===================================================== */
+    #hero { min-height: 100vh; display: flex; align-items: center; position: relative; overflow: hidden; padding-top: 66px; }
+    .hero-grid {
+      position: absolute; inset: 0; z-index: 0;
+      background-image: linear-gradient(rgba(255,98,0,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,98,0,.04) 1px, transparent 1px);
+      background-size: 56px 56px;
+    }
+    .hero-glow { position: absolute; top: -15%; right: -5%; width: 640px; height: 640px; border-radius: 50%; background: radial-gradient(circle, rgba(255,98,0,.13) 0%, transparent 65%); pointer-events: none; }
+    .hero-glow2 { position: absolute; bottom: -20%; left: -10%; width: 480px; height: 480px; border-radius: 50%; background: radial-gradient(circle, rgba(255,98,0,.07) 0%, transparent 65%); pointer-events: none; }
+
+    .hero-content { position: relative; z-index: 1; max-width: 700px; padding: 80px 0; }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,98,0,.07); border: 1px solid rgba(255,98,0,.22);
+      color: var(--orange); font-size: .7rem; font-weight: 700;
+      letter-spacing: .13em; text-transform: uppercase;
+      padding: 5px 14px; border-radius: 100px; margin-bottom: 28px;
+    }
+    .pill-dot { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; animation: blink 2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    .hero-h1 { font-size: clamp(2.3rem, 5.5vw, 4.8rem); font-weight: 800; line-height: 1.04; letter-spacing: -.04em; margin-bottom: 20px; }
+    .hero-h1 em { font-style: normal; color: var(--orange); }
+    .hero-p { font-size: clamp(.88rem, 1.7vw, 1.06rem); color: #555; max-width: 490px; line-height: 1.76; margin-bottom: 38px; }
+    .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 58px; }
+
+    .hero-stats { display: flex; }
+    .hs { display: flex; flex-direction: column; padding: 0 36px 0 0; }
+    .hs + .hs { padding-left: 36px; border-left: 1px solid #191919; }
+    .hs strong { font-size: 1.65rem; font-weight: 800; color: var(--white); letter-spacing: -.03em; line-height: 1; }
+    .hs span { font-size: .68rem; color: #3a3a3a; letter-spacing: .1em; text-transform: uppercase; margin-top: 5px; }
+
+    /* Kadi zinazoelea upande wa kulia */
+    .hero-float { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 14px; width: 40%; align-items: center; z-index: 1; }
+    .fcard { background: var(--card); border: 1px solid var(--bdr); border-radius: var(--rl); padding: 18px 22px; animation: float 4s ease-in-out infinite; }
+    .fcard:nth-child(2) { animation-delay: -.9s; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    .fcard-lbl { font-size: .62rem; font-weight: 700; color: var(--orange); letter-spacing: .16em; text-transform: uppercase; margin-bottom: 10px; }
+
+    /* =====================================================
+       GENERATOR
+       ===================================================== */
+    #generator { padding: 96px 0; background: var(--bg); }
+
+    .sl { font-size: .68rem; font-weight: 700; color: var(--orange); letter-spacing: .22em; text-transform: uppercase; margin-bottom: 10px; }
+    .st { font-size: clamp(1.65rem, 3.5vw, 2.8rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.1; margin-bottom: 12px; }
+    .ss { font-size: .88rem; color: #4a4a4a; max-width: 470px; line-height: 1.76; }
+    .sh { margin-bottom: 50px; }
+
+    /* Tabs */
+    .tabs { display: inline-flex; background: #090909; border: 1px solid var(--bdr); border-radius: var(--r); padding: 4px; margin-bottom: 42px; }
+    .tb { display: flex; align-items: center; gap: 7px; padding: 10px 22px; border-radius: 4px; background: transparent; color: #4a4a4a; font-size: .83rem; font-weight: 600; letter-spacing: .02em; transition: var(--t); }
+    .tb.active { background: var(--orange); color: var(--white); }
+    .tb:hover:not(.active) { color: #bbb; }
+
+    .tpanel { display: none; }
+    .tpanel.active { display: block; }
+
+    /* Generator grid */
+    .gg { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+
+    /* Form card */
+    .fc-card { background: var(--card); border: 1px solid var(--bdr); border-radius: var(--rl); padding: 30px; }
+    .fc-card h3 { font-size: .98rem; font-weight: 700; margin-bottom: 5px; letter-spacing: -.01em; }
+    .fc-card .dd { font-size: .8rem; color: #4a4a4a; margin-bottom: 26px; line-height: 1.65; }
+
+    .fg { margin-bottom: 16px; }
+    .fg label { display: block; font-size: .68rem; font-weight: 700; color: #4a4a4a; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 7px; }
+    .fi {
+      width: 100%; background: var(--inp); border: 1.5px solid #181818;
+      border-radius: var(--r); color: var(--white); font-size: .875rem;
+      padding: 12px 14px; transition: var(--t); -webkit-appearance: none; appearance: none;
+    }
+    .fi:focus { outline: none; border-color: var(--orange); background: #0a0a0a; }
+    .fi::placeholder { color: #2a2a2a; }
+    select.fi {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath fill='%23555' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 34px; cursor: pointer;
+    }
+    select.fi option { background: #111; color: #fff; }
+
+    .crow { display: flex; align-items: center; gap: 10px; }
+    .crow input[type=color] { width: 42px; height: 36px; padding: 2px 3px; background: var(--inp); border: 1.5px solid #181818; border-radius: var(--r); cursor: pointer; }
+    .chex { font-size: .76rem; color: #4a4a4a; font-weight: 500; background: #0a0a0a; border: 1px solid #181818; padding: 5px 10px; border-radius: 4px; }
+
+    .rrow { display: flex; align-items: center; gap: 12px; }
+    .rrow input[type=range] { flex: 1; -webkit-appearance: none; height: 4px; background: #1e1e1e; border-radius: 2px; cursor: pointer; }
+    .rrow input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--orange); border-radius: 50%; box-shadow: 0 0 0 3px rgba(255,98,0,.16); transition: var(--t); }
+    .rrow input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 6px rgba(255,98,0,.16); }
+    .rv { font-size: .76rem; font-weight: 700; color: var(--orange); background: rgba(255,98,0,.07); border: 1px solid rgba(255,98,0,.18); padding: 4px 10px; border-radius: 4px; min-width: 54px; text-align: center; }
+
+    .cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .cgrid p { font-size: .68rem; color: #3a3a3a; margin-bottom: 6px; font-weight: 600; }
+
+    .div { width: 100%; height: 1px; background: var(--bdr); margin: 20px 0; }
+
+    /* Generate button */
+    .gbtn {
+      width: 100%; padding: 14px; background: var(--orange); color: var(--white);
+      border-radius: var(--r); font-size: .88rem; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase; transition: var(--t); overflow: hidden;
+    }
+    .gbtn:hover:not(:disabled) { background: var(--ora2); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(255,98,0,.32); }
+    .gbtn:active { transform: translateY(0); }
+    .gbtn:disabled { opacity: .6; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    /* Spinner */
+    .spin { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: spin .65s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Feedback message */
+    .fb { margin-top: 11px; padding: 9px 13px; border-radius: var(--r); font-size: .78rem; font-weight: 500; display: none; line-height: 1.5; }
+    .fb.show { display: block; }
+    .fb.ok { background: rgba(0,200,110,.07); border: 1px solid rgba(0,200,110,.18); color: #00c870; }
+    .fb.err { background: rgba(255,60,60,.07); border: 1px solid rgba(255,60,60,.18); color: #ff5050; }
+
+    /* Preview card */
+    .pv-card { background: var(--card); border: 1px solid var(--bdr); border-radius: var(--rl); padding: 30px; }
+    .pv-card h3 { font-size: .98rem; font-weight: 700; margin-bottom: 5px; letter-spacing: -.01em; }
+    .pv-card .dd { font-size: .8rem; color: #4a4a4a; margin-bottom: 20px; line-height: 1.65; }
+
+    /* Preview box */
+    .pbox {
+      width: 100%; min-height: 200px;
+      background: #060606; border: 1.5px dashed #1a1a1a;
+      border-radius: var(--r); display: flex; align-items: center;
+      justify-content: center; margin-bottom: 20px; overflow: hidden; transition: var(--t);
+    }
+    .pbox.ready { background: #fff; border-style: solid; border-color: #1e1e1e; }
+    .ph { text-align: center; color: #252525; }
+    .ph svg { margin: 0 auto 10px; opacity: .45; }
+    .ph p { font-size: .76rem; }
+
+    /* Barcode SVG */
+    #bc-svg { display: none; max-width: 100%; }
+    #bc-svg.show { display: block; }
+
+    /* QR container — qrcodejs inaweka canvas hapa */
+    #qr-wrap { display: none; align-items: center; justify-content: center; padding: 16px; }
+    #qr-wrap.show { display: flex; }
+    #qr-wrap canvas, #qr-wrap img { max-width: 100%; height: auto !important; border-radius: 4px; }
+
+    /* Download */
+    .dl-lbl { font-size: .66rem; font-weight: 700; color: #3a3a3a; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 9px; }
+    .dl-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .dlb {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      padding: 11px 6px; background: var(--inp); border: 1.5px solid #1a1a1a;
+      border-radius: var(--r); color: #4a4a4a; font-size: .68rem; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase; transition: var(--t); cursor: pointer;
+    }
+    .dlb:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); background: rgba(255,98,0,.05); }
+    .dlb:disabled { opacity: .28; cursor: not-allowed; }
+
+    /* =====================================================
+       FEATURES
+       ===================================================== */
+    #features { padding: 96px 0; background: var(--black); }
+    .fh { text-align: center; max-width: 500px; margin: 0 auto 50px; }
+    .fg-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+    .feat { background: var(--card); border: 1px solid var(--bdr); border-radius: var(--rl); padding: 24px; transition: var(--t); position: relative; overflow: hidden; }
+    .feat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--orange); transform: scaleX(0); transform-origin: left; transition: var(--t); }
+    .feat:hover { transform: translateY(-3px); border-color: #242424; }
+    .feat:hover::before { transform: scaleX(1); }
+    .feat-ico { width: 42px; height: 42px; background: rgba(255,98,0,.07); border: 1px solid rgba(255,98,0,.14); border-radius: 9px; display: flex; align-items: center; justify-content: center; color: var(--orange); margin-bottom: 16px; }
+    .feat h4 { font-size: .88rem; font-weight: 700; margin-bottom: 7px; letter-spacing: -.01em; }
+    .feat p { font-size: .78rem; color: #4a4a4a; line-height: 1.65; }
+
+    /* =====================================================
+       CTA
+       ===================================================== */
+    #cta { padding: 96px 0; background: var(--bg); position: relative; overflow: hidden; }
+    #cta::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,98,0,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,98,0,.04) 1px, transparent 1px); background-size: 44px 44px; }
+    .cta-w { position: relative; z-index: 1; text-align: center; max-width: 580px; margin: 0 auto; }
+    .cta-w .sl { display: inline-block; }
+    .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 36px; }
+
+    /* =====================================================
+       FOOTER — Kali sana
+       ===================================================== */
+    #footer { background: #000; border-top: 1px solid #0c0c0c; padding-top: 0; }
+
+    /* Watermark kubwa */
+    .fwm {
+      font-size: clamp(3.5rem, 9vw, 8.5rem); font-weight: 900;
+      color: transparent; -webkit-text-stroke: 1px #0d0d0d;
+      letter-spacing: -.05em; text-align: center; line-height: 1;
+      padding: 28px 0 0; user-select: none; overflow: hidden;
+    }
+
+    .fmain { display: grid; grid-template-columns: 2fr 1fr 1fr 1.3fr; gap: 50px; padding: 52px 0; border-bottom: 1px solid #0d0d0d; }
+
+    /* Brand */
+    .fb-brand .bn { font-size: 1.45rem; font-weight: 900; letter-spacing: -.04em; line-height: 1; margin-bottom: 3px; }
+    .fb-brand .bn span { color: var(--orange); }
+    .fb-brand .bt { font-size: .58rem; color: #2a2a2a; letter-spacing: .2em; text-transform: uppercase; display: block; margin-bottom: 16px; }
+    .fb-brand p { font-size: .8rem; color: #383838; line-height: 1.76; max-width: 265px; margin-bottom: 22px; }
+
+    .sbadge { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,200,100,.05); border: 1px solid rgba(0,200,100,.1); border-radius: 100px; padding: 4px 12px; font-size: .65rem; color: #00c864; margin-bottom: 14px; }
+    .sbd { width: 5px; height: 5px; background: #00c864; border-radius: 50%; animation: blink 2s infinite; }
+
+    .socs { display: flex; gap: 7px; }
+    .soc { width: 34px; height: 34px; background: #090909; border: 1px solid #161616; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #383838; transition: var(--t); }
+    .soc:hover { border-color: var(--orange); color: var(--orange); background: rgba(255,98,0,.04); }
+
+    .fcol h5 { font-size: .68rem; font-weight: 800; color: var(--white); letter-spacing: .16em; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 10px; position: relative; }
+    .fcol h5::after { content: ''; position: absolute; bottom: 0; left: 0; width: 18px; height: 2px; background: var(--orange); border-radius: 1px; }
+    .fcol ul { list-style: none; }
+    .fcol ul li { margin-bottom: 8px; }
+    .fcol ul li a { font-size: .8rem; color: #333; display: flex; align-items: center; gap: 7px; transition: var(--t); }
+    .fcol ul li a::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: #1e1e1e; flex-shrink: 0; transition: var(--t); }
+    .fcol ul li a:hover { color: var(--white); }
+    .fcol ul li a:hover::before { background: var(--orange); }
+
+    /* Newsletter */
+    .nl p { font-size: .78rem; color: #363636; line-height: 1.65; margin-bottom: 13px; }
+    .nlf { display: flex; }
+    .nli { flex: 1; background: #080808; border: 1.5px solid #161616; border-right: none; border-radius: var(--r) 0 0 var(--r); color: var(--white); font-family: var(--ff); font-size: .76rem; padding: 10px 12px; }
+    .nli:focus { outline: none; border-color: var(--orange); }
+    .nli::placeholder { color: #242424; }
+    .nlb { background: var(--orange); color: #fff; border: none; border-radius: 0 var(--r) var(--r) 0; padding: 10px 14px; font-family: var(--ff); font-size: .72rem; font-weight: 700; cursor: pointer; transition: var(--t); white-space: nowrap; }
+    .nlb:hover { background: var(--ora2); }
+    .nlc { margin-top: 18px; }
+    .nlc p { font-size: .76rem; color: #2c2c2c; margin-bottom: 2px; }
+    .nlc strong { color: #484848; }
+
+    /* Footer stats */
+    .fstats { display: grid; grid-template-columns: repeat(4,1fr); border-top: 1px solid #0d0d0d; border-bottom: 1px solid #0d0d0d; }
+    .fst { text-align: center; padding: 26px 16px; border-right: 1px solid #0d0d0d; }
+    .fst:last-child { border-right: none; }
+    .fst .fn { font-size: 1.85rem; font-weight: 900; letter-spacing: -.04em; color: var(--white); line-height: 1; display: block; }
+    .fst .fn em { font-style: normal; color: var(--orange); }
+    .fst .fl { font-size: .62rem; color: #2c2c2c; letter-spacing: .16em; text-transform: uppercase; margin-top: 5px; display: block; }
+
+    /* Footer bottom */
+    .fbot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 18px 0; }
+    .fbot p { font-size: .72rem; color: #242424; }
+    .fbot p a { color: var(--orange); }
+    .fleg { display: flex; gap: 18px; }
+    .fleg a { font-size: .7rem; color: #242424; transition: var(--t); }
+    .fleg a:hover { color: #555; }
+
+    /* =====================================================
+       REVEAL ANIMATIONS
+       ===================================================== */
+    .rv { opacity: 0; transform: translateY(22px); transition: opacity .5s ease, transform .5s ease; }
+    .rv.in { opacity: 1; transform: translateY(0); }
+    .rv:nth-child(2) { transition-delay: .08s; }
+    .rv:nth-child(3) { transition-delay: .16s; }
+    .rv:nth-child(4) { transition-delay: .24s; }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+    @media (max-width: 1024px) {
+      .fg-grid { grid-template-columns: repeat(2,1fr); }
+      .fmain { grid-template-columns: 1fr 1fr; gap: 34px; }
+      .hero-float { display: none; }
+      .hero-content { max-width: 100%; }
+      .gg { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .nav-links, .nav-r { display: none; }
+      .ham { display: flex; }
+      .fmain { grid-template-columns: 1fr; gap: 30px; }
+      .fstats { grid-template-columns: repeat(2,1fr); }
+      .fst:nth-child(2) { border-right: none; }
+      .fg-grid { grid-template-columns: 1fr; }
+      .fbot { flex-direction: column; align-items: flex-start; }
+      .tabs { width: 100%; }
+      .tb { flex: 1; justify-content: center; padding: 10px 12px; font-size: .8rem; }
+    }
+    @media (max-width: 480px) {
+      .hero-btns, .cta-btns { flex-direction: column; }
+      .hero-btns .btn, .cta-btns .btn { width: 100%; justify-content: center; }
+      .hero-stats { gap: 0; }
+      .hs { padding: 0 22px 0 0; }
+      .hs + .hs { padding-left: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =====================================================
+       NAVBAR — Menyu ya juu ya ukurasa
+       ===================================================== -->
+  <header id="navbar">
+    <div class="container">
+      <nav class="nav-inner">
+        <a href="#" class="logo">
+          <span class="logo-top">Mnyilinga <span>Digital</span></span>
+          <span class="logo-sub">Barcode &amp; QR Solutions</span>
+        </a>
+        <ul class="nav-links">
+          <li><a href="#hero" class="active">Home</a></li>
+          <li><a href="#generator" id="nav-bc">Barcode Generator</a></li>
+          <li><a href="#generator" id="nav-qr-link">QR Generator</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#footer">Contact</a></li>
+        </ul>
+        <div class="nav-r">
+          <a href="#generator" class="btn btn-outline btn-sm">Try Free</a>
+          <a href="#generator" class="btn btn-primary btn-sm">Get Started</a>
+        </div>
+        <button class="ham" id="ham" aria-label="Toggle menu">
+          <span></span><span></span><span></span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <nav class="mobnav" id="mobnav">
+    <a href="#hero">Home</a>
+    <a href="#generator">Barcode Generator</a>
+    <a href="#generator">QR Generator</a>
+    <a href="#features">Features</a>
+    <a href="#footer">Contact</a>
+    <div class="mob-btns">
+      <a href="#generator" class="btn btn-outline btn-sm">Try Free</a>
+      <a href="#generator" class="btn btn-primary btn-sm">Get Started</a>
+    </div>
+  </nav>
+
+
+  <!-- =====================================================
+       HERO — Sehemu ya kwanza
+       ===================================================== -->
+  <section id="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-glow2"></div>
+
+    <!-- Kadi za preview zinazoelea -->
+    <div class="hero-float">
+      <div class="fcard">
+        <div class="fcard-lbl">Barcode Preview</div>
+        <svg width="230" height="86" viewBox="0 0 230 86" xmlns="http://www.w3.org/2000/svg">
+          <rect width="230" height="86" fill="#fff" rx="3"/>
+          <g fill="#000">
+            <rect x="10" y="7" width="3" height="58"/><rect x="15" y="7" width="2" height="58"/>
+            <rect x="19" y="7" width="5" height="58"/><rect x="26" y="7" width="2" height="58"/>
+            <rect x="30" y="7" width="3" height="58"/><rect x="35" y="7" width="7" height="58"/>
+            <rect x="44" y="7" width="2" height="58"/><rect x="48" y="7" width="4" height="58"/>
+            <rect x="54" y="7" width="5" height="58"/><rect x="61" y="7" width="2" height="58"/>
+            <rect x="65" y="7" width="3" height="58"/><rect x="70" y="7" width="7" height="58"/>
+            <rect x="79" y="7" width="2" height="58"/><rect x="83" y="7" width="5" height="58"/>
+            <rect x="90" y="7" width="2" height="58"/><rect x="94" y="7" width="3" height="58"/>
+            <rect x="99" y="7" width="7" height="58"/><rect x="108" y="7" width="2" height="58"/>
+            <rect x="112" y="7" width="4" height="58"/><rect x="118" y="7" width="2" height="58"/>
+            <rect x="122" y="7" width="5" height="58"/><rect x="129" y="7" width="3" height="58"/>
+            <rect x="134" y="7" width="7" height="58"/><rect x="143" y="7" width="2" height="58"/>
+            <rect x="147" y="7" width="4" height="58"/><rect x="153" y="7" width="5" height="58"/>
+            <rect x="160" y="7" width="2" height="58"/><rect x="164" y="7" width="3" height="58"/>
+            <rect x="169" y="7" width="7" height="58"/><rect x="178" y="7" width="2" height="58"/>
+            <rect x="182" y="7" width="4" height="58"/><rect x="188" y="7" width="2" height="58"/>
+            <rect x="192" y="7" width="5" height="58"/><rect x="199" y="7" width="3" height="58"/>
+            <rect x="204" y="7" width="7" height="58"/><rect x="213" y="7" width="2" height="58"/>
+            <rect x="217" y="7" width="4" height="58"/>
+          </g>
+          <text x="115" y="80" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" fill="#999">MNYILINGA DIGITAL 2024</text>
+        </svg>
+      </div>
+      <div class="fcard">
+        <div class="fcard-lbl">QR Code Preview</div>
+        <svg width="88" height="88" viewBox="0 0 88 88" xmlns="http://www.w3.org/2000/svg">
+          <rect width="88" height="88" fill="#fff" rx="3"/>
+          <rect x="7" y="7" width="28" height="28" rx="3" fill="none" stroke="#000" stroke-width="3"/>
+          <rect x="13" y="13" width="16" height="16" fill="#000" rx="1"/>
+          <rect x="53" y="7" width="28" height="28" rx="3" fill="none" stroke="#000" stroke-width="3"/>
+          <rect x="59" y="13" width="16" height="16" fill="#000" rx="1"/>
+          <rect x="7" y="53" width="28" height="28" rx="3" fill="none" stroke="#000" stroke-width="3"/>
+          <rect x="13" y="59" width="16" height="16" fill="#000" rx="1"/>
+          <rect x="53" y="53" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="65" y="53" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="53" y="65" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="65" y="65" width="16" height="16" fill="#000" rx="1"/>
+          <rect x="37" y="7" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="37" y="19" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="7" y="37" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="19" y="37" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="31" y="37" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="43" y="37" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="55" y="37" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="67" y="37" width="8" height="8" fill="#000" rx="1"/>
+          <rect x="79" y="37" width="8" height="8" fill="#000" rx="1"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="hero-content">
+        <div class="pill">
+          <span class="pill-dot"></span>
+          Professional Barcode &amp; QR Tool
+        </div>
+        <h1 class="hero-h1">Generate Barcodes<br>&amp; QR Codes <em>Instantly.</em></h1>
+        <p class="hero-p">Professional-grade code generation right in your browser. No signup, no limits, no API required — built for developers, designers, and businesses.</p>
+        <div class="hero-btns">
+          <a href="#generator" class="btn btn-primary btn-lg" id="h-bc">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="3" height="18"/><rect x="8" y="3" width="2" height="18"/><rect x="12" y="3" width="4" height="18"/><rect x="18" y="3" width="3" height="18"/></svg>
+            Generate Barcode
+          </a>
+          <a href="#generator" class="btn btn-outline btn-lg" id="h-qr">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="4" height="4"/></svg>
+            Generate QR Code
+          </a>
+        </div>
+        <div class="hero-stats">
+          <div class="hs"><strong>100%</strong><span>Browser-Based</span></div>
+          <div class="hs"><strong>3</strong><span>Export Formats</span></div>
+          <div class="hs"><strong>7+</strong><span>Barcode Types</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       GENERATOR — Sehemu kuu ya kuzalisha
+       ===================================================== -->
+  <section id="generator">
+    <div class="container">
+      <div class="sh">
+        <p class="sl">// Core Tool</p>
+        <h2 class="st">Start Generating Now</h2>
+        <p class="ss">Switch between Barcode and QR generation. Download your result as PNG, JPG, or SVG — all in your browser.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs" role="tablist">
+        <button class="tb active" id="tbc" role="tab">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="3" height="18"/><rect x="8" y="3" width="2" height="18"/><rect x="12" y="3" width="4" height="18"/><rect x="18" y="3" width="3" height="18"/></svg>
+          Barcode Generator
+        </button>
+        <button class="tb" id="tqr" role="tab">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="4" height="4"/></svg>
+          QR Code Generator
+        </button>
+      </div>
+
+      <!-- PANEL: BARCODE -->
+      <div class="tpanel active" id="pbc">
+        <div class="gg">
+          <div class="fc-card">
+            <h3>Barcode Settings</h3>
+            <p class="dd">Enter your data and select a format. The barcode generates instantly in the preview panel.</p>
+
+            <div class="fg">
+              <label for="bc-val">Data / Text</label>
+              <input type="text" id="bc-val" class="fi" placeholder="e.g., 123456789 or PRODUCT-001" value="MNYILINGA-2024" />
+            </div>
+            <div class="fg">
+              <label for="bc-fmt">Barcode Format</label>
+              <select id="bc-fmt" class="fi">
+                <option value="CODE128">CODE128 — Universal (any text or numbers)</option>
+                <option value="EAN13">EAN-13 — 13-digit retail standard</option>
+                <option value="EAN8">EAN-8 — Compact 8-digit retail</option>
+                <option value="UPC">UPC-A — North American retail (12 digits)</option>
+                <option value="CODE39">CODE39 — Alphanumeric (uppercase + numbers)</option>
+                <option value="ITF14">ITF-14 — Shipping &amp; logistics (14 digits)</option>
+                <option value="MSI">MSI — Inventory &amp; warehouse management</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Bar Color</label>
+              <div class="crow">
+                <input type="color" id="bc-col" value="#000000" />
+                <span class="chex" id="bc-col-txt">#000000</span>
+              </div>
+            </div>
+            <div class="div"></div>
+            <button class="gbtn" id="bc-btn">Generate Barcode</button>
+            <div class="fb" id="bc-fb"></div>
+          </div>
+
+          <div class="pv-card">
+            <h3>Live Preview</h3>
+            <p class="dd">Your barcode appears here. Verify it looks correct before downloading.</p>
+            <div class="pbox" id="bc-box">
+              <div class="ph" id="bc-ph">
+                <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="3" height="18"/><rect x="8" y="3" width="2" height="18"/><rect x="12" y="3" width="4" height="18"/><rect x="18" y="3" width="3" height="18"/></svg>
+                <p>Barcode will appear here</p>
+              </div>
+              <svg id="bc-svg"></svg>
+            </div>
+            <p class="dl-lbl">Download As</p>
+            <div class="dl-grid">
+              <button class="dlb" id="bc-png" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                PNG
+              </button>
+              <button class="dlb" id="bc-jpg" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                JPG
+              </button>
+              <button class="dlb" id="bc-svgbtn" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                SVG
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: QR CODE -->
+      <div class="tpanel" id="pqr">
+        <div class="gg">
+          <div class="fc-card">
+            <h3>QR Code Settings</h3>
+            <p class="dd">Enter any URL, text, or data. Customize size, colors, and error correction level.</p>
+
+            <div class="fg">
+              <label for="qr-val">URL / Text / Data</label>
+              <input type="text" id="qr-val" class="fi" placeholder="e.g., https://mnyilinga.co.tz or any text" value="https://mnyilinga.co.tz" />
+            </div>
+            <div class="fg">
+              <label for="qr-sz">Size</label>
+              <div class="rrow">
+                <input type="range" id="qr-sz" min="128" max="512" value="256" step="16" />
+                <span class="rv" id="qr-sz-lbl">256px</span>
+              </div>
+            </div>
+            <div class="fg">
+              <label>Colors</label>
+              <div class="cgrid">
+                <div>
+                  <p>Foreground (Dark)</p>
+                  <div class="crow">
+                    <input type="color" id="qr-fg" value="#000000" />
+                    <span class="chex" id="qr-fg-txt">#000000</span>
+                  </div>
+                </div>
+                <div>
+                  <p>Background (Light)</p>
+                  <div class="crow">
+                    <input type="color" id="qr-bg" value="#ffffff" />
+                    <span class="chex" id="qr-bg-txt">#ffffff</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="fg">
+              <label for="qr-ecl">Error Correction</label>
+              <select id="qr-ecl" class="fi">
+                <option value="L">L — Low (7% recovery capacity)</option>
+                <option value="M" selected>M — Medium (15% recovery capacity)</option>
+                <option value="Q">Q — Quartile (25% recovery capacity)</option>
+                <option value="H">H — High (30% recovery capacity)</option>
+              </select>
+            </div>
+            <div class="div"></div>
+            <button class="gbtn" id="qr-btn">Generate QR Code</button>
+            <div class="fb" id="qr-fb"></div>
+          </div>
+
+          <div class="pv-card">
+            <h3>Live Preview</h3>
+            <p class="dd">Scan the generated QR code with any mobile device to verify it works correctly.</p>
+            <div class="pbox" id="qr-box">
+              <div class="ph" id="qr-ph">
+                <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="4" height="4"/></svg>
+                <p>QR Code will appear here</p>
+              </div>
+              <!-- qrcodejs itaweka canvas ndani ya div hii -->
+              <div id="qr-wrap"></div>
+            </div>
+            <p class="dl-lbl">Download As</p>
+            <div class="dl-grid">
+              <button class="dlb" id="qr-png" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                PNG
+              </button>
+              <button class="dlb" id="qr-jpg" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                JPG
+              </button>
+              <button class="dlb" id="qr-svgbtn" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                SVG
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       FEATURES
+       ===================================================== -->
+  <section id="features">
+    <div class="container">
+      <div class="fh">
+        <p class="sl">// Why Choose Us</p>
+        <h2 class="st">Everything You Need,<br>Nothing Extra</h2>
+      </div>
+      <div class="fg-grid">
+        <div class="feat rv"><div class="feat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><h4>Instant Generation</h4><p>Generate codes in milliseconds. Everything runs client-side with zero server roundtrips.</p></div>
+        <div class="feat rv"><div class="feat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><h4>3 Export Formats</h4><p>Download as PNG, JPG, or SVG — print-ready and screen-ready out of the box.</p></div>
+        <div class="feat rv"><div class="feat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h4>100% Private</h4><p>Your data never leaves your device. No tracking, no logging, no cloud processing.</p></div>
+        <div class="feat rv"><div class="feat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div><h4>No API Needed</h4><p>Works offline after first load. No keys, no rate limits, no monthly subscription.</p></div>
+        <div class="feat rv"><div class="feat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><h4>7+ Barcode Formats</h4><p>CODE128, EAN-13, EAN-8, UPC-A, CODE39, ITF-14, MSI — every major standard covered.</p></div>
+        <div class="feat rv"><div class="feat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div><h4>Custom Brand Colors</h4><p>Full color control — match your exact brand identity for barcodes and QR codes.</p></div>
+        <div class="feat rv"><div class="feat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg></div><h4>Fully Responsive</h4><p>Works perfectly on desktop, tablet, and mobile. Generate and download codes anywhere.</p></div>
+        <div class="feat rv"><div class="feat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><h4>Error Correction</h4><p>QR codes support 4 correction levels — readable even when partially obscured or damaged.</p></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       CTA
+       ===================================================== -->
+  <section id="cta">
+    <div class="container">
+      <div class="cta-w">
+        <p class="sl">// Get Started Free</p>
+        <h2 class="st">Ready to Generate<br>Your First Code?</h2>
+        <p class="ss" style="margin:0 auto;">No signup required. Works instantly in your browser. Free forever.</p>
+        <div class="cta-btns">
+          <a href="#generator" class="btn btn-primary btn-lg">Start Generating</a>
+          <a href="#features" class="btn btn-outline btn-lg">View All Features</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       FOOTER — Kali sana
+       ===================================================== -->
+  <footer id="footer">
+    <div class="fwm">MNYILINGA</div>
+    <div class="container">
+      <div class="fmain">
+        <!-- Brand -->
+        <div class="fcol fb-brand">
+          <div class="sbadge"><span class="sbd"></span> All Systems Operational</div>
+          <div class="bn">Mnyilinga <span>Digital</span></div>
+          <span class="bt">Est. Tanzania · 2024</span>
+          <p>A modern digital toolkit built for East African businesses and developers. Fast, private, and professional — no compromises.</p>
+          <div class="socs">
+            <a href="#" class="soc" aria-label="X"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.213 5.567zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+            <a href="#" class="soc" aria-label="LinkedIn"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+            <a href="#" class="soc" aria-label="GitHub"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg></a>
+            <a href="#" class="soc" aria-label="Instagram"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+          </div>
+        </div>
+        <!-- Product links -->
+        <div class="fcol"><h5>Product</h5><ul><li><a href="#generator">Barcode Generator</a></li><li><a href="#generator">QR Code Generator</a></li><li><a href="#features">Features</a></li><li><a href="#">API Docs</a></li><li><a href="#">Changelog</a></li></ul></div>
+        <!-- Company links -->
+        <div class="fcol"><h5>Company</h5><ul><li><a href="#">About Us</a></li><li><a href="#">Blog</a></li><li><a href="#">Careers</a></li><li><a href="#">Press Kit</a></li><li><a href="#">Contact</a></li></ul></div>
+        <!-- Newsletter -->
+        <div class="fcol"><h5>Stay Updated</h5><div class="nl"><p>Get product updates, new features, and tips delivered to your inbox.</p><div class="nlf"><input type="email" class="nli" placeholder="your@email.com" /><button class="nlb">Subscribe</button></div><div class="nlc"><p><strong>hello@mnyilinga.co.tz</strong></p><p>Dar es Salaam, Tanzania</p></div></div></div>
+      </div>
+    </div>
+    <!-- Footer stats -->
+    <div class="fstats">
+      <div class="fst"><span class="fn">50<em>K+</em></span><span class="fl">Codes Generated</span></div>
+      <div class="fst"><span class="fn">7<em>+</em></span><span class="fl">Barcode Formats</span></div>
+      <div class="fst"><span class="fn">3</span><span class="fl">Export Formats</span></div>
+      <div class="fst"><span class="fn">100<em>%</em></span><span class="fl">Client-Side</span></div>
+    </div>
+    <div class="container">
+      <div class="fbot">
+        <p>&copy; 2024 <a href="#">Mnyilinga Digital.</a> All rights reserved. Built with precision in Tanzania.</p>
+        <div class="fleg">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Use</a>
+          <a href="#">Cookie Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- =====================================================
+       JAVASCRIPT — Msimbo uliosahihishwa kabisa
+       ===================================================== -->
+  <script>
+  /* =========================================================
+     MNYILINGA DIGITAL — JAVASCRIPT ILIYOSAHIHISHWA
+     Maoni yote kwa Kiswahili
+     ========================================================= */
+
+  /* ---------------------------------------------------------
+     DEBOUNCE — Zuia kazi isitekelezwe mara nyingi sana
+     Lazima ifafanuliwe KWANZA kabla ya kutumika
+     --------------------------------------------------------- */
+  function debounce(fn, ms) {
+    var t;
+    return function() {
+      var ctx = this, args = arguments;
+      clearTimeout(t);
+      t = setTimeout(function() { fn.apply(ctx, args); }, ms);
+    };
+  }
+
+  /* ---------------------------------------------------------
+     NAVBAR — Badilisha mandhari ukipanda chini
+     --------------------------------------------------------- */
+  var navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', function() {
+    navbar.classList.toggle('scrolled', window.scrollY > 30);
+  }, { passive: true });
+
+  /* ---------------------------------------------------------
+     HAMBURGER — Fungua/funga menyu ya simu
+     --------------------------------------------------------- */
+  var hamBtn  = document.getElementById('ham');
+  var mobnav  = document.getElementById('mobnav');
+
+  hamBtn.addEventListener('click', function() {
+    var open = hamBtn.classList.toggle('open');
+    mobnav.classList.toggle('open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  });
+
+  mobnav.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      hamBtn.classList.remove('open');
+      mobnav.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+  });
+
+  /* ---------------------------------------------------------
+     TABS — Badilisha kati ya Barcode na QR
+     --------------------------------------------------------- */
+  function switchTab(which) {
+    document.getElementById('tbc').classList.toggle('active', which === 'bc');
+    document.getElementById('tqr').classList.toggle('active', which === 'qr');
+    document.getElementById('pbc').classList.toggle('active', which === 'bc');
+    document.getElementById('pqr').classList.toggle('active', which === 'qr');
+  }
+
+  document.getElementById('tbc').addEventListener('click', function() { switchTab('bc'); });
+  document.getElementById('tqr').addEventListener('click', function() { switchTab('qr'); });
+  document.getElementById('h-bc').addEventListener('click', function() { switchTab('bc'); });
+  document.getElementById('h-qr').addEventListener('click', function() { switchTab('qr'); });
+  document.getElementById('nav-bc').addEventListener('click', function(e) {
+    e.preventDefault(); switchTab('bc');
+    document.getElementById('generator').scrollIntoView({ behavior: 'smooth' });
+  });
+  document.getElementById('nav-qr-link').addEventListener('click', function(e) {
+    e.preventDefault(); switchTab('qr');
+    document.getElementById('generator').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  /* ---------------------------------------------------------
+     MSAADA — Kazi za jumla
+     --------------------------------------------------------- */
+
+  // Onyesha ujumbe wa maoni
+  function feedback(id, type, msg) {
+    var el = document.getElementById(id);
+    el.className = 'fb ' + type + ' show';
+    el.textContent = msg;
+    clearTimeout(el._fbTimer);
+    el._fbTimer = setTimeout(function() { el.classList.remove('show'); }, 5500);
+  }
+
+  // Wezesha au zima vitufe vya download
+  function setDl(ids, on) {
+    ids.forEach(function(id) {
+      document.getElementById(id).disabled = !on;
+    });
+  }
+
+  // Pakua canvas kama PNG au JPG
+  function dlCanvas(canvas, filename, fmt) {
+    var a = document.createElement('a');
+    var dataUrl;
+    if (fmt === 'jpg') {
+      // Tengeneza canvas mpya yenye mandhari nyeupe kwa JPG
+      var tmp = document.createElement('canvas');
+      tmp.width  = canvas.width;
+      tmp.height = canvas.height;
+      var ctx = tmp.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, tmp.width, tmp.height);
+      ctx.drawImage(canvas, 0, 0);
+      dataUrl = tmp.toDataURL('image/jpeg', 0.95);
+    } else {
+      dataUrl = canvas.toDataURL('image/png');
+    }
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // Badilisha SVG kuwa canvas kwa kiwango cha juu cha ubora
+  function svgToCanvas(svgEl, cb) {
+    var bbox   = svgEl.getBoundingClientRect();
+    var W      = parseInt(svgEl.getAttribute('width'))  || Math.round(bbox.width)  || 500;
+    var H      = parseInt(svgEl.getAttribute('height')) || Math.round(bbox.height) || 200;
+    var scale  = 2; // kwa ubora wa juu zaidi
+    var data   = new XMLSerializer().serializeToString(svgEl);
+    var blob   = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
+    var url    = URL.createObjectURL(blob);
+    var img    = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      canvas.width  = W * scale;
+      canvas.height = H * scale;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      cb(canvas);
+    };
+    img.onerror = function() {
+      URL.revokeObjectURL(url);
+      alert('Could not convert image. Please try again.');
+    };
+    img.src = url;
+  }
+
+  // Pakua blob kama faili
+  function dlBlob(blob, filename) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  /* ---------------------------------------------------------
+     BARCODE GENERATOR — Mfumo wa kuzalisha barcode
+     --------------------------------------------------------- */
+  var bcVal  = document.getElementById('bc-val');
+  var bcFmt  = document.getElementById('bc-fmt');
+  var bcCol  = document.getElementById('bc-col');
+  var bcColT = document.getElementById('bc-col-txt');
+  var bcBtn  = document.getElementById('bc-btn');
+  var bcSvg  = document.getElementById('bc-svg');
+  var bcBox  = document.getElementById('bc-box');
+  var bcPh   = document.getElementById('bc-ph');
+
+  // Onyesha thamani ya rangi
+  bcCol.addEventListener('input', function() { bcColT.textContent = bcCol.value; });
+
+  // Kazi ya kuzalisha barcode
+  function genBarcode() {
+    var val = bcVal.value.trim();
+    var fmt = bcFmt.value;
+    var col = bcCol.value;
+
+    if (!val) {
+      feedback('bc-fb', 'err', 'Please enter barcode data first.');
+      return;
+    }
+
+    // Spinner wakati wa kuzalisha
+    bcBtn.innerHTML = '<span class="spin"></span>Generating...';
+    bcBtn.disabled = true;
+
+    setTimeout(function() {
+      try {
+        // Zalisha barcode kwa JsBarcode
+        JsBarcode(bcSvg, val, {
+          format:       fmt,
+          lineColor:    col,
+          width:        2.4,
+          height:       100,
+          displayValue: true,
+          font:         'Inter, sans-serif',
+          fontOptions:  '500',
+          textAlign:    'center',
+          textPosition: 'bottom',
+          textMargin:   8,
+          fontSize:     14,
+          background:   '#ffffff',
+          margin:       18
+        });
+
+        // Onyesha barcode, ficha placeholder
+        bcSvg.style.display = 'block';
+        bcPh.style.display  = 'none';
+        bcBox.classList.add('ready');
+        setDl(['bc-png','bc-jpg','bc-svgbtn'], true);
+        feedback('bc-fb', 'ok', 'Barcode generated! Download in your preferred format below.');
+
+      } catch (err) {
+        feedback('bc-fb', 'err',
+          'Format error: "' + fmt + '" — ' + (err.message || 'invalid data for this format') +
+          '. Switch to CODE128 for any text or number.');
+        console.error(err);
+      }
+
+      bcBtn.innerHTML = 'Generate Barcode';
+      bcBtn.disabled = false;
+    }, 250);
+  }
+
+  bcBtn.addEventListener('click', genBarcode);
+  bcVal.addEventListener('input', debounce(genBarcode, 700));
+  bcFmt.addEventListener('change', genBarcode);
+  bcCol.addEventListener('change', genBarcode);
+
+  // Download ya Barcode
+  document.getElementById('bc-png').addEventListener('click', function() {
+    svgToCanvas(bcSvg, function(c) { dlCanvas(c, 'mnyilinga-barcode.png', 'png'); });
+  });
+  document.getElementById('bc-jpg').addEventListener('click', function() {
+    svgToCanvas(bcSvg, function(c) { dlCanvas(c, 'mnyilinga-barcode.jpg', 'jpg'); });
+  });
+  document.getElementById('bc-svgbtn').addEventListener('click', function() {
+    var blob = new Blob([new XMLSerializer().serializeToString(bcSvg)], { type: 'image/svg+xml' });
+    dlBlob(blob, 'mnyilinga-barcode.svg');
+  });
+
+  /* ---------------------------------------------------------
+     QR CODE GENERATOR — Mfumo wa kuzalisha QR code
+     Tumia: new QRCode(el, options) ya qrcodejs library
+     --------------------------------------------------------- */
+  var qrVal   = document.getElementById('qr-val');
+  var qrSz    = document.getElementById('qr-sz');
+  var qrSzLbl = document.getElementById('qr-sz-lbl');
+  var qrFg    = document.getElementById('qr-fg');
+  var qrFgTxt = document.getElementById('qr-fg-txt');
+  var qrBg    = document.getElementById('qr-bg');
+  var qrBgTxt = document.getElementById('qr-bg-txt');
+  var qrEcl   = document.getElementById('qr-ecl');
+  var qrBtn   = document.getElementById('qr-btn');
+  var qrBox   = document.getElementById('qr-box');
+  var qrPh    = document.getElementById('qr-ph');
+  var qrWrap  = document.getElementById('qr-wrap');
+
+  // Onyesha thamani za vigezo
+  qrSz.addEventListener('input', function() { qrSzLbl.textContent = qrSz.value + 'px'; });
+  qrFg.addEventListener('input', function() { qrFgTxt.textContent = qrFg.value; });
+  qrBg.addEventListener('input', function() { qrBgTxt.textContent = qrBg.value; });
+
+  // Kumbuka kitu cha QRCode
+  var qrObj = null;
+
+  // Ramani ya Error Correction Level kwa qrcodejs
+  var eclMap = { L: QRCode.CorrectLevel.L, M: QRCode.CorrectLevel.M, Q: QRCode.CorrectLevel.Q, H: QRCode.CorrectLevel.H };
+
+  // Kazi ya kuzalisha QR code
+  function genQR() {
+    var text = qrVal.value.trim();
+    var size = parseInt(qrSz.value) || 256;
+    var fg   = qrFg.value;
+    var bg   = qrBg.value;
+    var ecl  = qrEcl.value;
+
+    if (!text) {
+      feedback('qr-fb', 'err', 'Please enter a URL or text first.');
+      return;
+    }
+
+    qrBtn.innerHTML = '<span class="spin"></span>Generating...';
+    qrBtn.disabled = true;
+
+    setTimeout(function() {
+      try {
+        // Futa QR ya zamani kabisa
+        qrWrap.innerHTML = '';
+        qrObj = null;
+
+        // Tengeneza QR mpya kwa qrcodejs
+        qrObj = new QRCode(qrWrap, {
+          text:         text,
+          width:        size,
+          height:       size,
+          colorDark:    fg,
+          colorLight:   bg,
+          correctLevel: eclMap[ecl] || QRCode.CorrectLevel.M
+        });
+
+        // Onyesha QR code
+        qrWrap.style.display = 'flex';
+        qrWrap.style.alignItems = 'center';
+        qrWrap.style.justifyContent = 'center';
+        qrWrap.style.padding = '16px';
+        qrPh.style.display = 'none';
+        qrBox.classList.add('ready');
+        setDl(['qr-png','qr-jpg','qr-svgbtn'], true);
+        feedback('qr-fb', 'ok', 'QR Code generated! Scan with any device to verify.');
+
+      } catch (err) {
+        feedback('qr-fb', 'err', 'QR generation failed: ' + (err.message || 'Unknown error'));
+        console.error(err);
+      }
+
+      qrBtn.innerHTML = 'Generate QR Code';
+      qrBtn.disabled = false;
+    }, 250);
+  }
+
+  qrBtn.addEventListener('click', genQR);
+  qrVal.addEventListener('input', debounce(genQR, 700));
+  qrSz.addEventListener('change', genQR);
+  qrFg.addEventListener('change', genQR);
+  qrBg.addEventListener('change', genQR);
+  qrEcl.addEventListener('change', genQR);
+
+  // Pata canvas kutoka kwa qrcodejs (inaweka canvas kwenye wrapper)
+  function getQrCanvas() {
+    return qrWrap.querySelector('canvas');
+  }
+
+  // Download ya QR
+  document.getElementById('qr-png').addEventListener('click', function() {
+    var c = getQrCanvas();
+    if (c) dlCanvas(c, 'mnyilinga-qrcode.png', 'png');
+  });
+  document.getElementById('qr-jpg').addEventListener('click', function() {
+    var c = getQrCanvas();
+    if (c) dlCanvas(c, 'mnyilinga-qrcode.jpg', 'jpg');
+  });
+  document.getElementById('qr-svgbtn').addEventListener('click', function() {
+    // Badilisha canvas QR kuwa SVG vector iliyobeba picha
+    var c = getQrCanvas();
+    if (!c) return;
+    var dataUrl = c.toDataURL('image/png');
+    var sz = c.width;
+    var bgColor = qrBg.value || '#ffffff';
+    var svgStr = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ' +
+      'width="' + sz + '" height="' + sz + '" viewBox="0 0 ' + sz + ' ' + sz + '">\n' +
+      '  <rect width="' + sz + '" height="' + sz + '" fill="' + bgColor + '"/>\n' +
+      '  <image width="' + sz + '" height="' + sz + '" xlink:href="' + dataUrl + '"/>\n' +
+      '</svg>';
+    var blob = new Blob([svgStr], { type: 'image/svg+xml' });
+    dlBlob(blob, 'mnyilinga-qrcode.svg');
+  });
+
+  /* ---------------------------------------------------------
+     SCROLL ANIMATIONS — Vitu vinavyoingia kwenye skrini
+     --------------------------------------------------------- */
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.rv').forEach(function(el) { observer.observe(el); });
+
+  /* ---------------------------------------------------------
+     MWANZO — Zalisha barcode mfano ukipakia ukurasa
+     --------------------------------------------------------- */
+  window.addEventListener('load', function() {
+    setTimeout(genBarcode, 500);
+  });
+
+  </script>
+</body>
+</html>
