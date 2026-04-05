@@ -1358,7 +1358,14 @@ html, body {
   user-zoom: fixed; /* hii inazuia user ku-zoom */
 }
 
+body {
+  user-select: none; /* inazuia select text zote kwenye page */
+}
 
+/* Lakini weka input, textarea, au elements editable ziwe selectable */
+input, textarea, [contenteditable="true"] {
+  user-select: text;
+}
 
 
 
