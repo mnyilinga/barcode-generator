@@ -1348,7 +1348,7 @@
 /* Zuia pinch zoom kwenye mobile */
 html, body {
   touch-action: pan-x pan-y; /* inaruhusu scrolling lakini inazuia zoom */
-  overscroll-behavior: auto;
+  overscroll-behavior: auto; /* inazuia overscroll bounce kwenye iOS */
 }
 
 /* Meta viewport */
@@ -1358,21 +1358,20 @@ html, body {
   user-zoom: fixed; /* hii inazuia user ku-zoom */
 }
 
+
 body {
   user-select: none; /* inazuia select text zote kwenye page */
 }
 
-/* Lakini weka input, textarea, au elements editable ziwe selectable */
-input, textarea, [contenteditable="true"] {
-  user-select: text;
-}
 
 
 
 
 
 
-        
+
+
+
       }
     </style>
   </head>
@@ -1571,7 +1570,7 @@ input, textarea, [contenteditable="true"] {
             Generate Barcodes<br />&amp; QR Codes <em>Instantly.</em>
           </h1>
           <p class="hero-p">
-            Tovuti hii inakuwezesha kuunda Barcode na QR Code bure, 
+           Tovuti hii inakuwezesha kuunda Barcode na QR Code bure, 
            na kuzipakua kwa fomati za PNG, SVG, na JPG. Inarahisishia
             kazi za graphics designers, developers, 
             na wafanyabiashara kupata QR 
@@ -1614,7 +1613,7 @@ input, textarea, [contenteditable="true"] {
           </div>
           <div class="hero-stats">
             <div class="hs">
-              <strong>100%</strong><span>FREE DOWNLOAD </span>
+              <strong>100%</strong><span>Free download</span>
             </div>
             <div class="hs"><strong>3</strong><span>Export Formats</span></div>
             <div class="hs"><strong>7+</strong><span>Barcode Types</span></div>
@@ -1988,6 +1987,19 @@ input, textarea, [contenteditable="true"] {
           </div>
           <div class="feat rv">
             <div class="feat-ico">
+
+
+
+
+
+
+
+
+
+
+
+
+
               <svg
                 width="19"
                 height="19"
@@ -2003,12 +2015,23 @@ input, textarea, [contenteditable="true"] {
             </div>
             <h4>3 Export Formats</h4>
             <p>
-              Download as PNG, JPG, or SVG — print-ready and screen-ready out of
+              Download as PNG, JPG, or SVG print-ready and screen-ready out of
               the box.
             </p>
           </div>
           <div class="feat rv">
             <div class="feat-ico">
+
+
+
+
+
+
+
+
+
+
+
               <svg
                 width="19"
                 height="19"
@@ -2028,28 +2051,26 @@ input, textarea, [contenteditable="true"] {
           </div>
           <div class="feat rv">
             <div class="feat-ico">
-              <svg
-                width="19"
-                height="19"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"
-                />
-              </svg>
-            </div>
-            <h4>No API Needed</h4>
-            <p>
-              Works offline after first load. No keys, no rate limits, no
-              monthly subscription.
-            </p>
-          </div>
-          <div class="feat rv">
-            <div class="feat-ico">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
               <svg
                 width="19"
                 height="19"
@@ -2066,54 +2087,37 @@ input, textarea, [contenteditable="true"] {
             </div>
             <h4>7+ Barcode Formats</h4>
             <p>
-              CODE128, EAN-13, EAN-8, UPC-A, CODE39, ITF-14, MSI — every major
+              CODE128, EAN-13, EAN-8, UPC-A, CODE39, ITF-14, MSI every major
               standard covered.
             </p>
           </div>
           <div class="feat rv">
             <div class="feat-ico">
-              <svg
-                width="19"
-                height="19"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
-                />
-                <line x1="4" y1="22" x2="4" y2="15" />
-              </svg>
-            </div>
-            <h4>Custom Brand Colors</h4>
-            <p>
-              Full color control — match your exact brand identity for barcodes
-              and QR codes.
-            </p>
-          </div>
-          <div class="feat rv">
-            <div class="feat-ico">
-              <svg
-                width="19"
-                height="19"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <rect x="5" y="2" width="14" height="20" rx="2" />
-                <circle cx="12" cy="17" r="1" />
-              </svg>
-            </div>
-            <h4>Fully Responsive</h4>
-            <p>
-              Works perfectly on desktop, tablet, and mobile. Generate and
-              download codes anywhere.
-            </p>
-          </div>
-          <div class="feat rv">
-            <div class="feat-ico">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
               <svg
                 width="19"
                 height="19"
@@ -2127,7 +2131,7 @@ input, textarea, [contenteditable="true"] {
             </div>
             <h4>Error Correction</h4>
             <p>
-              QR codes support 4 correction levels — readable even when
+              QR codes support 4 correction levels readable even when
               partially obscured or damaged.
             </p>
           </div>
@@ -2180,7 +2184,16 @@ input, textarea, [contenteditable="true"] {
 
 
             <div class="bn">Mnyilinga <span>Digital</span></div>
-            <span class="bt">Est. Tanzania · 2024</span>
+
+
+            <br>
+
+
+
+
+
+
+
             <p>
               A modern digital toolkit built for East African businesses and
               developers. Fast, private, and professional — no compromises.
