@@ -1344,6 +1344,28 @@
         .hs + .hs {
           padding-left: 22px;
         }
+
+/* Zuia pinch zoom kwenye mobile */
+html, body {
+  touch-action: pan-x pan-y; /* inaruhusu scrolling lakini inazuia zoom */
+  overscroll-behavior: none;
+}
+
+/* Meta viewport */
+@viewport {
+  width: device-width;
+  zoom: 1.0;
+  user-zoom: fixed; /* hii inazuia user ku-zoom */
+}
+
+
+
+
+
+
+
+
+        
       }
     </style>
   </head>
